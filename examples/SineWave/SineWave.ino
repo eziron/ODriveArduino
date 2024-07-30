@@ -1,10 +1,8 @@
- 
 #include <ODriveArduino.h>
 #include <SoftwareSerial.h>
 
 // Documentation for this example can be found here:
 // https://docs.odriverobotics.com/v/latest/guides/arduino-guide.html
-
 
 ////////////////////////////////
 // Set up serial pins to the ODrive
@@ -35,7 +33,6 @@ int baudrate = 19200; // Must match what you configure on the ODrive (see docs f
 // See https://www.arduino.cc/reference/en/language/functions/communication/serial/ for other options
 // HardwareSerial& odrive_serial = Serial1;
 // int baudrate = 115200; // Must match what you configure on the ODrive (see docs for details)
-
 
 ODriveArduino odrive(odrive_serial);
 
@@ -71,16 +68,19 @@ void loop() {
   
   float phase = t * (TWO_PI / SINE_PERIOD);
   
-  odrive.setPosition(
-    sin(phase), // position
-    cos(phase) * (TWO_PI / SINE_PERIOD) // velocity feedforward (optional)
-  );
+  odrive.SetPosition(0, sin(phase), cos(phase) * (TWO_PI / SINE_PERIOD));
+  odrive.SetPosition(1, sin(phase), cos(phase) * (TWO_PI / SINE_PERIOD));
 
-  ODriveFeedback feedback = odrive.getFeedback();
-  Serial.print("pos:");
-  Serial.print(feedback.pos);
-  Serial.print(", ");
-  Serial.print("vel:");
-  Serial.print(feedback.vel);
+  float velocity_M0, position_M0, velocity_M1, position_M1;
+  odrive.GetFeedback(&velocity_M0, &position_M0, &velocity_M1, &position_M1);
+  
+  Serial.print("pos M0: ");
+  Serial.print(position_M0);
+  Serial.print(", vel M0: ");
+  Serial.print(velocity_M0);
+  Serial.print(", pos M1: ");
+  Serial.print(position_M1);
+  Serial.print(", vel M1: ");
+  Serial.print(velocity_M1);
   Serial.println();
 }

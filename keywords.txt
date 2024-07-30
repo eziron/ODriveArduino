@@ -1,27 +1,28 @@
-
 # Classes
-
 ODriveArduino	KEYWORD1
 
 # Functions
-
 clearErrors	KEYWORD2
-setPosition	KEYWORD2
-setPosition	KEYWORD2
-setPosition	KEYWORD2
-setVelocity	KEYWORD2
-setVelocity	KEYWORD2
-setCurrent	KEYWORD2
-trapezoidalMove	KEYWORD2
-getFeedback	KEYWORD2
-getPosition	KEYWORD2
-getVelocity	KEYWORD2
+SetPosition	KEYWORD2
+SetPosition	KEYWORD2
+SetPosition	KEYWORD2
+SetVelocity	KEYWORD2
+SetVelocity	KEYWORD2
+SetVelocity_tow	KEYWORD2
+SetCurrent	KEYWORD2
+TrapezoidalMove	KEYWORD2
+SetVelocity_GetFeedback_vbus	KEYWORD2
+SetVelocity_GetFeedback	KEYWORD2
+SetVelocity_get_vbus	KEYWORD2
+GetVelocity	KEYWORD2
+GetPosition	KEYWORD2
+GetFeedback	KEYWORD2
 getParameterAsString	KEYWORD2
 getParameterAsInt	KEYWORD2
 getParameterAsFloat	KEYWORD2
 setParameter	KEYWORD2
-setParameter	KEYWORD2
-setState	KEYWORD2
-getState	KEYWORD2
-runState	KEYWORD2
-readLine	KEYWORD2
+run_state	KEYWORD2
+readString	KEYWORD2
+Clean_serial	KEYWORD2
+readFloat	KEYWORD2
+readInt	KEYWORD2
