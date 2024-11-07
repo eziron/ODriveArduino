@@ -2,10 +2,10 @@
 #include <HardwareSerial.h>
 #include <SoftwareSerial.h>
 #include <ODriveArduino.h>
-
 // Printing with stream operator helper functions
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
 template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
+
 
 ////////////////////////////////
 // Set up serial pins to the ODrive
@@ -34,6 +34,7 @@ HardwareSerial& odrive_serial = Serial1;
 // pin 9: TX - connect to ODrive RX
 // SoftwareSerial odrive_serial(8, 9);
 
+
 // ODrive object
 ODriveArduino odrive(odrive_serial);
 
@@ -52,8 +53,8 @@ void setup() {
   // You can of course set them different if you want.
   // See the documentation or play around in odrivetool to see the available parameters
   for (int axis = 0; axis < 2; ++axis) {
-    odrive.setParameter("axis" + String(axis) + ".controller.config.vel_limit", 10.0f);
-    odrive.setParameter("axis" + String(axis) + ".motor.config.current_lim", 11.0f);
+    odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << 10.0f << '\n';
+    odrive_serial << "w axis" << axis << ".motor.config.current_lim " << 11.0f << '\n';
     // This ends up writing something like "w axis0.motor.config.current_lim 10.0\n"
   }
 
@@ -71,7 +72,7 @@ void loop() {
 
     // Run calibration sequence
     if (c == '0' || c == '1') {
-      int motornum = c - '0';
+      int motornum = c-'0';
       int requested_state;
 
       requested_state = AXIS_STATE_MOTOR_CALIBRATION;
@@ -101,21 +102,19 @@ void loop() {
 
     // Read bus voltage
     if (c == 'b') {
-      float vbus;
-      odrive.SetVelocity_get_vbus(0.0, 0.0, &vbus);
-      Serial << "Vbus voltage: " << vbus << '\n';
+      odrive_serial << "r vbus_voltage\n";
+      Serial << "Vbus voltage: " << odrive.readFloat() << '\n';
     }
 
-    // Print motor positions in a 10s loop
+    // print motor positions in a 10s loop
     if (c == 'p') {
       static const unsigned long duration = 10000;
       unsigned long start = millis();
-      while (millis() - start < duration) {
-        float velocity_M0, position_M0, velocity_M1, position_M1;
-        odrive.GetFeedback(&velocity_M0, &position_M0, &velocity_M1, &position_M1);
-        Serial << "Position M0: " << position_M0 << "\tVelocity M0: " << velocity_M0
-               << "\tPosition M1: " << position_M1 << "\tVelocity M1: " << velocity_M1 << '\n';
-        delay(100);
+      while(millis() - start < duration) {
+        for (int motor = 0; motor < 2; ++motor) {
+          Serial << odrive.GetPosition(motor) << '\t';
+        }
+        Serial << '\n';
       }
     }
   }

@@ -1,4 +1,3 @@
-
 #ifndef ODriveEnums_h
 #define ODriveEnums_h
 
