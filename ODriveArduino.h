@@ -5,10 +5,15 @@
 #include "Arduino.h"
 #include "ODriveEnums.h"
 
-class ODriveArduino {
+class ODriveArduino
+{
 public:
-    ODriveArduino(Stream& serial);
+    ODriveArduino(Stream &serial);
 
+    void WaitIdle(float timeout);
+    void SaveConfig();
+    void EraseConfig();
+    void Reboot();
     void clearErrors();
 
     // Commands
@@ -30,16 +35,17 @@ public:
     float GetPosition(int motor_number);
     void GetFeedback(float *velocity_M0, float *position_M0, float *velocity_M1, float *position_M1);
     // General params
-    float readFloat();
-    int32_t readInt();
+    float readFloat(unsigned long timeout = 100);
+    int32_t readInt(unsigned long timeout = 100);
 
     // State helper
     bool run_state(int axis, int requested_state, bool wait_for_idle, float timeout = 10.0f);
+
 private:
-    String readString(unsigned long timeout = 5000);
+    String readString(unsigned long timeout = 500);
     void Clean_serial();
 
-    Stream& serial_;
+    Stream &serial_;
 };
 
-#endif //ODriveArduino_h
+#endif // ODriveArduino_h
