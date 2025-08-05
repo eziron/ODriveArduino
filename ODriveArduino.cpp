@@ -3,6 +3,7 @@
 
 
 ODriveArduino::ODriveArduino(Stream &serial)
+ODriveArduino::ODriveArduino(Stream &serial)
     : serial_(serial) {}
 
 void ODriveArduino::WaitIdle(int motor_number, float timeout)
@@ -60,11 +61,13 @@ void ODriveArduino::ReadProperty(int motor_number, const char *property, int *va
     *value = readInt();
 }
 
-void ODriveArduino::SetPosition(int motor_number, float position) {
+void ODriveArduino::SetPosition(int motor_number, float position)
+{
     SetPosition(motor_number, position, 0.0f, 0.0f);
 }
 
-void ODriveArduino::SetPosition(int motor_number, float position, float velocity_feedforward) {
+void ODriveArduino::SetPosition(int motor_number, float position, float velocity_feedforward)
+{
     SetPosition(motor_number, position, velocity_feedforward, 0.0f);
 }
 
@@ -72,7 +75,8 @@ void ODriveArduino::SetPosition(int motor_number, float position, float velocity
     serial_ << "p " << motor_number << " " << position << " " << velocity_feedforward << " " << current_feedforward << "\n";
 }
 
-void ODriveArduino::SetVelocity(int motor_number, float velocity) {
+void ODriveArduino::SetVelocity(int motor_number, float velocity)
+{
     SetVelocity(motor_number, velocity, 0.0f);
 }
 
@@ -80,11 +84,13 @@ void ODriveArduino::SetVelocity(int motor_number, float velocity, float current_
     serial_ << "v " << motor_number << " " << velocity << " " << current_feedforward << "\n";
 }
 
-void ODriveArduino::SetCurrent(int motor_number, float current) {
+void ODriveArduino::SetCurrent(int motor_number, float current)
+{
     serial_ << "c " << motor_number << " " << current << "\n";
 }
 
-void ODriveArduino::TrapezoidalMove(int motor_number, float position) {
+void ODriveArduino::TrapezoidalMove(int motor_number, float position)
+{
     serial_ << "t " << motor_number << " " << position << "\n";
 }
 
@@ -126,7 +132,8 @@ float ODriveArduino::GetVelocity(int motor_number) {
     return readFloat();
 }
 
-float ODriveArduino::GetPosition(int motor_number) {
+float ODriveArduino::GetPosition(int motor_number)
+{
     serial_ << "r axis" << motor_number << ".encoder.pos_estimate\n";
     return readFloat();
 }
