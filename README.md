@@ -1,154 +1,205 @@
-# ODriveArduino Extended: Optimized for High-Frequency Control
+# ODriveArduino Extended
 
-Esta es una librería de Arduino para controlar los drivers de motor ODrive (v3.x) a través de su interfaz UART de texto.
+Librería de Arduino para controlar ODrive por UART (protocolo ASCII), con foco en control de alta frecuencia y baja latencia.
 
-## Una Extensión de la Librería Oficial
+Este proyecto parte de la librería oficial de ODrive y mantiene su estilo de uso, agregando funciones optimizadas para enviar comandos y leer feedback en menos transacciones.
 
-Esta librería comenzó como un fork de la [**librería oficial ODriveArduino**](https://github.com/odriverobotics/ODriveArduino) y extiende su funcionalidad. Mantiene la compatibilidad con la API original pero agrega nuevas funciones optimizadas para aplicaciones de alto rendimiento, como la robótica.
+Repositorio original de referencia:
 
-## Característica Clave: Comunicación Optimizada
+- https://github.com/odriverobotics/ODriveArduino
 
-El principal objetivo de esta extensión es reducir la latencia de la comunicación UART. En aplicaciones de control en tiempo real, enviar múltiples comandos por separado puede crear un cuello de botella.
+Documentación oficial del protocolo ASCII (ODrive 0.5.6 / ODrive 3.6):
 
-**Método Tradicional (Múltiples Transacciones):**
-```cpp
-// 3 viajes de ida y vuelta por el puerto serie
-odrive.SetVelocity(0, 5.0);
-odrive.SetVelocity(1, -5.0);
-float vbus = odrive.readFloat(); // Requiere enviar "r vbus_voltage"
-```
+- https://docs.odriverobotics.com/v/0.5.6/ascii-protocol.html
 
-**Método Optimizado (Una Sola Transacción):**
-Esta librería introduce funciones que agrupan varios comandos en un solo envío, reduciendo drásticamente la latencia.
-```cpp
-// 1 solo viaje de ida y vuelta para hacer todo
-float vbus, vel0, pos0, vel1, pos1;
-odrive.SetVelocityBoth_GetFeedback_Vbus(5.0, -5.0, &vbus, &vel0, &pos0, &vel1, &pos1);
-```
+## Características principales
+
+- API simple para comandos de posición, velocidad y corriente.
+- Funciones de lectura agrupada de feedback (posición/velocidad y `vbus`).
+- Funciones combinadas para **setpoint + feedback** en una sola secuencia de UART.
+- Soporte de constantes de estado/modo mediante `ODriveEnums.h`.
+
+## Compatibilidad
+
+- ODrive con interfaz UART ASCII habilitada.
+- Pensada para ODrive v3.x (puede funcionar con otras versiones si mantienen comandos ASCII compatibles).
+- Cualquier `Stream` de Arduino (`HardwareSerial`, `SoftwareSerial`, etc.).
 
 ## Instalación
 
-1.  Descarga este repositorio como un archivo `.zip`.
-2.  Abre tu IDE de Arduino.
-3.  Ve a `Programa > Incluir Librería > Añadir biblioteca .ZIP`.
-4.  Selecciona el archivo `.zip` que acabas de descargar.
-5.  ¡Listo! Ahora puedes usar `#include "ODriveArduino.h"` en tus sketches.
+1. Descarga el repositorio como `.zip`.
+2. En Arduino IDE: `Programa > Incluir Librería > Añadir biblioteca .ZIP`.
+3. Selecciona el archivo `.zip` descargado.
+4. Incluye en tu sketch:
 
-## Uso Básico
+```cpp
+#include "ODriveArduino.h"
+```
 
-Primero, incluye la librería y crea un objeto `ODriveArduino`, pasándole el objeto `Stream` que usarás para la comunicación (normalmente un `HardwareSerial`).
+## Inicio rápido
 
 ```cpp
 #include <HardwareSerial.h>
 #include "ODriveArduino.h"
 
-// Selecciona el puerto serie conectado al ODrive
 HardwareSerial& odrive_serial = Serial1;
-
-// Crea el objeto ODrive
 ODriveArduino odrive(odrive_serial);
 
 void setup() {
-  // Inicia la comunicación serial con el ODrive a 115200 baud
-  odrive_serial.begin(115200);
+    Serial.begin(115200);
+    odrive_serial.begin(115200);
 
-  // Inicia el serial para el monitor de depuración
-  Serial.begin(115200);
+    odrive.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, true);
+    odrive.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+}
 
-  // Calibra el motor 0 y ponlo en modo de control de bucle cerrado
-  odrive.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, true);
-  odrive.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+void loop() {
+    odrive.SetVelocity(0, 2.0f);
+    delay(10);
 }
 ```
 
-## Documentación de la API (Funciones Principales)
+## API de la librería
 
-Las funciones se agrupan por propósito. Las funciones sobrecargadas se explican una sola vez.
+### 1) Configuración y estado
 
----
+- `void SaveConfig()`
+- `void EraseConfig()`
+- `void Reboot()`
+- `void ClearErrors()`
+- `void SendCommand(const char* command)`
+- `ODriveAxisState read_state(int axis)`
+- `bool run_state(int axis, ODriveAxisState requested_state, bool wait_for_idle, float timeout = 10.0f)`
+- `void WaitIdle(int motor_number = -1, float timeout = 10.0f)`
 
-### Configuración y Estado
+Notas:
 
-*   `bool run_state(int axis, int requested_state, bool wait_for_idle, ...)`
-    Cambia el estado del eje (p. ej., a `AXIS_STATE_CLOSED_LOOP_CONTROL`). Opcionalmente, puede esperar a que el eje vuelva al estado `IDLE`.
+- `motor_number = -1` en `WaitIdle()` espera ambos ejes.
+- `run_state()` devuelve `true` si no expira el timeout.
 
-*   `void WaitIdle(int motor_number, ...)`
-    Pausa la ejecución hasta que uno o ambos motores (`motor_number = -1`) lleguen al estado `IDLE`.
+### 2) Lectura/escritura de propiedades genéricas
 
-*   `SaveConfig()`, `EraseConfig()`, `Reboot()`, `ClearErrors()`
-    Funciones de una línea para guardar la configuración, borrarla, reiniciar el ODrive o limpiar los errores.
+- `void WriteProperty(int motor_number, const char* property, double value)`
+- `void WriteProperty(int motor_number, const char* property, float value)`
+- `void WriteProperty(int motor_number, const char* property, int value)`
+- `void ReadProperty(int motor_number, const char* property, double* value)`
+- `void ReadProperty(int motor_number, const char* property, float* value)`
+- `void ReadProperty(int motor_number, const char* property, int* value)`
 
----
+Ejemplo:
 
-### Comandos de Movimiento (Un solo motor)
+```cpp
+float vel_limit;
+odrive.ReadProperty(0, "controller.config.vel_limit", &vel_limit);
+odrive.WriteProperty(0, "controller.config.vel_limit", 15.0f);
+```
 
-*   `SetPosition(int motor_number, float position, ...)`
-    Comanda al motor a una posición. Opcionalmente, puedes añadir valores de *feedforward* para velocidad y corriente.
+### 3) Comandos de movimiento (motor individual)
 
-*   `SetVelocity(int motor_number, float velocity, ...)`
-    Comanda al motor a una velocidad. Opcionalmente, puedes añadir un valor de *feedforward* de corriente.
+- `void SetPosition(int motor_number, float position)`
+- `void SetPosition(int motor_number, float position, float velocity_feedforward)`
+- `void SetPosition(int motor_number, float position, float velocity_feedforward, float current_feedforward)`
+- `void SetVelocity(int motor_number, float velocity)`
+- `void SetVelocity(int motor_number, float velocity, float current_feedforward)`
+- `void SetCurrent(int motor_number, float current)`
+- `void TrapezoidalMove(int motor_number, float position)`
 
-*   `SetCurrent(int motor_number, float current)`
-    Comanda al motor a un torque/corriente específico.
+### 4) Feedback y getters
 
-*   `TrapezoidalMove(int motor_number, float position)`
-    Comanda al motor a una posición utilizando el planificador de trayectoria trapezoidal.
+- `float GetVelocity(int motor_number)`
+- `float GetPosition(int motor_number)`
+- `float GetVbus()`
+- `void GetFeedback(int motor_number, float* velocity_M, float* position_M)`
+- `void GetFeedbackBoth(float* velocity_M0, float* position_M0, float* velocity_M1, float* position_M1)`
+- `void GetFeedback_Vbus(int motor_number, float* velocity_M, float* position_M, float* vbus)`
+- `void GetFeedbackBoth_Vbus(float* velocity_M0, float* position_M0, float* velocity_M1, float* position_M1, float* vbus)`
 
----
+### 5) Funciones optimizadas (alta frecuencia)
 
-### Lectura de Feedback (Getters)
+- `void SetVelocityBoth(float velocity_M0, float velocity_M1)`
+- `void SetVelocity_GetFeedback(int motor_number, float set_VM, float* velocity_M, float* position_M)`
+- `void SetVelocityBoth_GetFeedback(float set_VM0, float set_VM1, float* velocity_M0, float* position_M0, float* velocity_M1, float* position_M1)`
+- `void SetVelocityBoth_GetFeedback_Vbus(float set_VM0, float set_VM1, float* vbus, float* velocity_M0, float* position_M0, float* velocity_M1, float* position_M1)`
+- `void SetVelocityBoth_GetVbus(float set_VM0, float set_VM1, float* vbus)`
 
-*   `GetPosition(int motor_number)` / `GetVelocity(int motor_number)`
-    Devuelven la posición o velocidad estimada del motor especificado.
+Estas funciones reducen transacciones UART al combinar en una sola secuencia:
 
-*   `GetFeedback(int motor_number, float* velocity, float* position)`
-    Obtiene la velocidad y posición de un solo motor en una sola llamada.
+- escritura de setpoints,
+- lectura de feedback,
+- y opcionalmente lectura de `vbus`.
 
----
-
-### **Funciones Optimizadas (Ambos motores)**
-
-Estas funciones son la principal ventaja de esta librería.
-
-*   `SetVelocityBoth(float velocity_M0, float velocity_M1)`
-    Establece la velocidad de ambos motores en una sola transacción.
-
-*   `GetFeedbackBoth(float* vel_M0, float* pos_M0, ...)`
-    Obtiene la posición y velocidad de ambos motores en una sola transacción.
-
-*   `SetVelocityBoth_GetFeedback(...)` / `SetVelocityBoth_GetFeedback_Vbus(...)`
-    **Las funciones más potentes.** Establecen la velocidad de ambos motores y, en la misma transacción, leen el feedback de posición/velocidad y opcionalmente el voltaje del bus. Ideal para bucles de control de alta frecuencia.
-
-### Ejemplo Avanzado: Bucle de Control Optimizado
-
-Este ejemplo muestra cómo usar las funciones optimizadas para un control eficiente.
+## Ejemplo de lazo optimizado
 
 ```cpp
 void loop() {
-  // Variables para almacenar el feedback
-  float vbus, vel0, pos0, vel1, pos1;
+    float vbus, vel0, pos0, vel1, pos1;
 
-  // Genera comandos de velocidad para ambos motores
-  float set_v0 = 2.0f * sin(millis() / 1000.0f * M_PI);
-  float set_v1 = 2.0f * cos(millis() / 1000.0f * M_PI);
+    float set_v0 = 2.0f;
+    float set_v1 = -2.0f;
 
-  // ¡Una sola función para enviar comandos y recibir todo el feedback!
-  odrive.SetVelocityBoth_GetFeedback_Vbus(set_v0, set_v1, &vbus, &vel0, &pos0, &vel1, &pos1);
-  
-  // Imprime los datos recibidos
-  Serial.print("Vbus: "); Serial.print(vbus);
-  Serial.print(" | M0_pos: "); Serial.print(pos0);
-  Serial.print(" | M1_pos: "); Serial.println(pos1);
-  
-  delay(10); // Simula el resto del trabajo del bucle
+    odrive.SetVelocityBoth_GetFeedback_Vbus(
+        set_v0, set_v1,
+        &vbus,
+        &vel0, &pos0,
+        &vel1, &pos1
+    );
+
+    Serial.print("Vbus: "); Serial.print(vbus);
+    Serial.print(" | M0 vel/pos: "); Serial.print(vel0); Serial.print(" / "); Serial.print(pos0);
+    Serial.print(" | M1 vel/pos: "); Serial.print(vel1); Serial.print(" / "); Serial.println(pos1);
+
+    delay(10);
 }
 ```
 
-### Enumeraciones (`ODriveEnums.h`)
+## Detalles de implementación útiles
 
-Para evitar el uso de "números mágicos", esta librería incluye un archivo `ODriveEnums.h` con todas las constantes importantes del ODrive, como:
-- `AXIS_STATE_...`
-- `CONTROL_MODE_...`
-- `INPUT_MODE_...`
+- El operador `<<` está sobrecargado para `Print`, y para `float` se imprime con 4 decimales.
+- Las funciones de feedback llaman internamente a `CleanSerial()` para vaciar datos pendientes antes de la transacción.
+- Lecturas de bajo nivel disponibles:
+  - `float readFloat(unsigned long timeout = 100)`
+  - `int32_t readInt(unsigned long timeout = 100)`
+- El timeout de lectura se mide internamente con `micros()`.
 
-El uso de estas constantes hace que tu código sea mucho más legible y robusto.
+## Recomendación para UART de alta velocidad (ODrive 3.6, UART A)
+
+Si quieres usar UART a velocidades altas (por ejemplo `1M` o `2M` baudios), se recomienda eliminar el filtro pasa bajos pasivo en los GPIO 1 y 2 de ODrive 3.6 (UART A).
+
+Estos GPIO incluyen filtro RC con jumpers soldables (SMD):
+
+- GPIO 1:
+  - `R52` en paralelo a `J5` (NO)
+  - `C63` en serie con `J6` (NC)
+- GPIO 2:
+  - `R53` en paralelo con `J10`
+  - `C64` en paralelo con `J15`
+
+Opciones para deshabilitar el filtro:
+
+- Opción 1:
+  - Soldar puentes `J5` y `J10` (bypass de `R52` y `R53`).
+  - Opcionalmente cortar `J6` y `J15` para desconectar `C63` y `C64`.
+- Opción 2:
+  - Remover `R52`, `R53`, `C63`, `C64`.
+  - Soldar resistencias `0R` en `R52` y `R53`.
+
+Notas:
+
+- En algunos clones chinos, la numeración de componentes puede variar respecto al esquemático original.
+- Esta modificación permite aumentar significativamente la frecuencia efectiva de actualización del setpoint de velocidad (por ejemplo, ~1000 Hz o más, según firmware, CPU y calidad de enlace UART).
+
+## Enumeraciones
+
+`ODriveEnums.h` incluye constantes como:
+
+- `AXIS_STATE_*`
+- `CONTROL_MODE_*`
+- `INPUT_MODE_*`
+
+Usarlas mejora la legibilidad y evita valores mágicos.
+
+## Ejemplo incluido
+
+Puedes revisar un ejemplo funcional en:
+
+- `examples/ODriveArduinoTest/ODriveArduinoTest.ino`

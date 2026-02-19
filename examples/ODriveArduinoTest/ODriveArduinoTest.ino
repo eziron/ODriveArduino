@@ -1,155 +1,167 @@
 /**
  * @file ODriveArduinoTest.ino
  * @author Your Name (@eziron1)
- * @brief Example sketch for the ODriveArduino library with optimized functions.
- * 
- * This sketch provides an interactive serial menu to test the various features
- * of the ODrive, showcasing the library's capabilities, especially the 
- * optimized functions for high-frequency communication.
- * 
- * --- MENU COMMANDS ---
- * 'h': Print this help menu
- * '0', '1': Calibrate motor 0 or 1
- * 's': Run a sinusoidal position move on both motors
- * 'v': Run a velocity control test on motor 0
- * 't': Run a trapezoidal move test on motor 0
- * 'c': Run a current (torque) control test on motor 0
- * 'o': Run an OPTIMIZED high-frequency feedback loop test
- * 'b': Read ODrive bus voltage
- * 'e': Check for errors on both axes
- * 'r': Reboot the ODrive
- * 
+ * @brief Sketch de ejemplo para la librería ODriveArduino con funciones optimizadas.
+ *
+ * Este sketch ofrece un menú serial interactivo para probar las funciones
+ * principales del ODrive, con énfasis en las llamadas optimizadas para
+ * comunicación de alta frecuencia.
+ *
+ * --- COMANDOS DEL MENÚ ---
+ * 'h': Imprimir este menú de ayuda
+ * '0', '1': Calibrar motor 0 o 1
+ * 's': Ejecutar movimiento sinusoidal de posición en ambos motores
+ * 'v': Ejecutar prueba de control de velocidad en motor 0
+ * 't': Ejecutar prueba de movimiento trapezoidal en motor 0
+ * 'c': Ejecutar prueba de control de corriente (torque) en motor 0
+ * 'o': Ejecutar prueba OPTIMIZADA de lazo con feedback
+ * 'b': Leer voltaje de bus del ODrive
+ * 'e': Verificar errores en ambos ejes
+ * 'r': Reiniciar el ODrive
+ *
  */
 
-// Includes
+// Inclusiones
 #include <HardwareSerial.h>
 #include <SoftwareSerial.h>
 #include "ODriveArduino.h"
 
 ////////////////////////////////
-// Set up serial pins to the ODrive
+// Configuración de pines serie hacia ODrive
 ////////////////////////////////
 
-// Teensy 3 and 4 (all versions) - Serial1
-// pin 0: RX - connect to ODrive TX (GPIO2)
-// pin 1: TX - connect to ODrive RX (GPIO1)
-HardwareSerial& odrive_serial = Serial1;
+// Teensy 3 y 4 (todas las versiones) - Serial1
+// pin 0: RX - conectar a TX de ODrive (GPIO2)
+// pin 1: TX - conectar a RX de ODrive (GPIO1)
+HardwareSerial &odrive_serial = Serial1;
 
-// Arduino Mega or Due - Serial1
-// pin 19: RX - connect to ODrive TX (GPIO2)
-// pin 18: TX - connect to ODrive RX (GPIO1)
+// Arduino Mega o Due - Serial1
+// pin 19: RX - conectar a TX de ODrive (GPIO2)
+// pin 18: TX - conectar a RX de ODrive (GPIO1)
 // HardwareSerial& odrive_serial = Serial1;
 
-// Arduino without spare serial ports (such as Arduino UNO) have to use software serial.
-// Note that this can be unreliable.
-// pin 8: RX - connect to ODrive TX (GPIO2)
-// pin 9: TX - connect to ODrive RX (GPIO1)
+// Arduino sin puertos serie extra (como UNO) debe usar SoftwareSerial.
+// Nota: puede ser menos confiable.
+// pin 8: RX - conectar a TX de ODrive (GPIO2)
+// pin 9: TX - conectar a RX de ODrive (GPIO1)
 // SoftwareSerial odrive_serial(8, 9);
 
-
-// ODrive object
+// Objeto ODrive
 ODriveArduino odrive(odrive_serial);
 
 void printMenu();
 
-void setup() {
-  // ODrive uses 115200 baud
+void setup()
+{
+  // UART con ODrive
   odrive_serial.begin(115200);
 
-  // Serial to PC
+  // Serial de depuración hacia PC
   Serial.begin(115200);
-  while (!Serial) ; // wait for Arduino Serial Monitor to open
+  while (!Serial)
+    ; // Espera apertura del monitor serial
 
-  Serial.println("ODriveArduino Library Test Sketch");
-  Serial.println("Setting parameters...");
+  Serial.println("Sketch de prueba de la libreria ODriveArduino");
+  Serial.println("Configurando parametros...");
 
-  // Set parameters using the library's functions
-  for (int axis = 0; axis < 2; ++axis) {
+  // Configuración base con funciones de librería
+  for (int axis = 0; axis < 2; ++axis)
+  {
     odrive.WriteProperty(axis, "controller.config.vel_limit", 20.0f);
     odrive.WriteProperty(axis, "motor.config.current_lim", 25.0f);
-    odrive.WriteProperty(axis, "motor.config.requested_current_range", 30.0f); // Recommended for gimbal motors
+    odrive.WriteProperty(axis, "motor.config.requested_current_range", 30.0f); // Recomendado en motores gimbal
   }
 
-  Serial.println("Ready! Use the menu below.");
+  Serial.println("Listo. Usa el menu:");
   printMenu();
 }
 
-void loop() {
-  if (Serial.available()) {
+void loop()
+{
+  if (Serial.available())
+  {
     char c = Serial.read();
 
-    switch (c) {
-      case 'h':
-        printMenu();
-        break;
-      case '0':
-      case '1':
-        calibrateMotor(c - '0');
-        break;
-      case 's':
-        testSinusoidalMove();
-        break;
-      case 'v':
-        testVelocityControl();
-        break;
-      case 't':
-        testTrapezoidalMove();
-        break;
-      case 'c':
-        testCurrentControl();
-        break;
-      case 'o':
-        testOptimizedFeedbackLoop();
-        break;
-      case 'b':
-        readBusVoltage();
-        break;
-      case 'e':
-        checkErrors();
-        break;
-      case 'r':
-        Serial.println("Rebooting ODrive...");
-        odrive.Reboot();
-        break;
+    switch (c)
+    {
+    case 'h':
+      printMenu();
+      break;
+    case '0':
+    case '1':
+      calibrateMotor(c - '0');
+      break;
+    case 's':
+      testSinusoidalMove();
+      break;
+    case 'v':
+      testVelocityControl();
+      break;
+    case 't':
+      testTrapezoidalMove();
+      break;
+    case 'c':
+      testCurrentControl();
+      break;
+    case 'o':
+      testOptimizedFeedbackLoop();
+      break;
+    case 'b':
+      readBusVoltage();
+      break;
+    case 'e':
+      checkErrors();
+      break;
+    case 'r':
+      Serial.println("Reiniciando ODrive...");
+      odrive.Reboot();
+      break;
     }
   }
 }
 
-void printMenu() {
-  Serial.println("\n--- ODrive Test Menu ---");
-  Serial.println("'h': Print this help menu");
-  Serial.println("'0', '1': Calibrate motor 0 or 1");
-  Serial.println("'s': Run sinusoidal position move");
-  Serial.println("'v': Run velocity control test (M0)");
-  Serial.println("'t': Run trapezoidal move test (M0)");
-  Serial.println("'c': Run current (torque) control test (M0)");
-  Serial.println("'o': Run OPTIMIZED feedback loop test");
-  Serial.println("'b': Read bus voltage");
-  Serial.println("'e': Check for errors");
-  Serial.println("'r': Reboot the ODrive\n");
+void printMenu()
+{
+  Serial.println("\n--- Menu de Pruebas ODrive ---");
+  Serial.println("'h': Mostrar este menu");
+  Serial.println("'0', '1': Calibrar motor 0 o 1");
+  Serial.println("'s': Prueba sinusoidal de posicion");
+  Serial.println("'v': Prueba de control de velocidad (M0)");
+  Serial.println("'t': Prueba de movimiento trapezoidal (M0)");
+  Serial.println("'c': Prueba de control de corriente/torque (M0)");
+  Serial.println("'o': Prueba OPTIMIZADA de feedback");
+  Serial.println("'b': Leer voltaje de bus");
+  Serial.println("'e': Verificar errores");
+  Serial.println("'r': Reiniciar ODrive\n");
 }
 
-void calibrateMotor(int motor_num) {
-  Serial.print("Calibrating Axis");
+// Calibra un eje y lo deja en lazo cerrado.
+void calibrateMotor(int motor_num)
+{
+  Serial.print("Calibrando eje ");
   Serial.print(motor_num);
   Serial.println("...");
-  
-  if (!odrive.run_state(motor_num, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, true, 25.0f)) {
-    Serial.println("ERROR: Calibration failed!");
+
+  if (!odrive.run_state(motor_num, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, true, 25.0f))
+  {
+    Serial.println("ERROR: Fallo la calibracion");
     return;
   }
-  
-  // Optional: Put axis into closed loop control after calibration
+
+  // Opcional: pasar a control en lazo cerrado al finalizar
   odrive.run_state(motor_num, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
-  Serial.print("Axis");
+  Serial.print("Eje ");
   Serial.print(motor_num);
-  Serial.println(" calibrated and in Closed Loop Control.");
+  Serial.println(" calibrado y en control de lazo cerrado.");
 }
 
-void testSinusoidalMove() {
-  Serial.println("Executing sinusoidal test move for 5 seconds...");
+// Mueve ambos ejes con trayectoria sinusoidal en posicion.
+void testSinusoidalMove()
+{
+  Serial.println("Ejecutando prueba sinusoidal por 5 segundos...");
   long start_time = millis();
-  while (millis() - start_time < 5000) {
+  while (millis() - start_time < 5000)
+  {
     float phase = (millis() - start_time) / 1000.0f * 2.0f * M_PI;
     float pos_m0 = 2.0f * cos(phase);
     float pos_m1 = 2.0f * sin(phase);
@@ -157,115 +169,133 @@ void testSinusoidalMove() {
     odrive.SetPosition(1, pos_m1);
     delay(10);
   }
-  Serial.println("Move complete.");
+  Serial.println("Movimiento finalizado.");
 }
 
-void testVelocityControl() {
-  Serial.println("Testing velocity control on Motor 0...");
-  Serial.println("Ramping up to 5 turns/sec...");
+// Prueba escalonada de velocidad en el motor 0.
+void testVelocityControl()
+{
+  Serial.println("Probando control de velocidad en Motor 0...");
+  Serial.println("Subiendo a 5 vueltas/seg...");
   odrive.SetVelocity(0, 5.0f);
   delay(2000);
-  Serial.println("Ramping down to -5 turns/sec...");
+  Serial.println("Bajando a -5 vueltas/seg...");
   odrive.SetVelocity(0, -5.0f);
   delay(2000);
-  Serial.println("Setting velocity to 0.");
+  Serial.println("Llevando velocidad a 0.");
   odrive.SetVelocity(0, 0.0f);
-  Serial.println("Test complete.");
+  Serial.println("Prueba finalizada.");
 }
 
-void testTrapezoidalMove() {
-  Serial.println("Testing trapezoidal move on Motor 0 to position 5...");
+// Prueba del planificador trapezoidal en el motor 0.
+void testTrapezoidalMove()
+{
+  Serial.println("Probando movimiento trapezoidal de Motor 0 a posicion 5...");
   odrive.TrapezoidalMove(0, 5.0f);
-  Serial.println("Command sent. Waiting for move to complete...");
-  odrive.WaitIdle(0, 10.0f); // Wait for motor 0 to be idle
-  
-  Serial.print("Move complete. Final position: ");
+  Serial.println("Comando enviado. Esperando fin de movimiento...");
+  odrive.WaitIdle(0, 10.0f); // Espera estado IDLE del motor 0
+
+  Serial.print("Movimiento finalizado. Posicion final: ");
   Serial.println(odrive.GetPosition(0));
 }
 
-void testCurrentControl() {
-  Serial.println("Testing current (torque) control on Motor 0.");
-  Serial.println("Applying 0.5A of current for 3 seconds. Feel the torque!");
+// Prueba de control de corriente/torque en el motor 0.
+void testCurrentControl()
+{
+  Serial.println("Probando control de corriente/torque en Motor 0.");
+  Serial.println("Aplicando 0.5A durante 3 segundos.");
   odrive.SetCurrent(0, 0.5f);
   delay(3000);
-  Serial.println("Releasing torque.");
+  Serial.println("Liberando torque.");
   odrive.SetCurrent(0, 0.0f);
-  Serial.println("Test complete.");
+  Serial.println("Prueba finalizada.");
 }
 
-void testOptimizedFeedbackLoop() {
-  Serial.println("\n--- Testing OPTIMIZED Feedback Loop ---");
-  Serial.println("This test sends commands to both motors and reads all feedback in a single transaction.");
-  Serial.println("Running for 5 seconds...\n");
+// Lazo optimizado: setpoint de ambos ejes + feedback + vbus.
+void testOptimizedFeedbackLoop()
+{
+  Serial.println("\n--- Prueba de Lazo OPTIMIZADO ---");
+  Serial.println("Envia comandos a ambos motores y lee todo el feedback en una sola transaccion.");
+  Serial.println("Ejecutando por 5 segundos...\n");
 
   long start_time = millis();
   int iterations = 0;
   float vbus, vel0, pos0, vel1, pos1;
 
-  while (millis() - start_time < 5000) {
-    // Generate some simple velocity commands
+  while (millis() - start_time < 5000)
+  {
+    // Genera setpoints de velocidad simples
     float set_v0 = 2.0f * sin((millis() - start_time) / 1000.0f * M_PI);
     float set_v1 = 2.0f * cos((millis() - start_time) / 1000.0f * M_PI);
 
-    // This is the optimized function call!
+    // Llamada optimizada principal
     odrive.SetVelocityBoth_GetFeedback_Vbus(set_v0, set_v1, &vbus, &vel0, &pos0, &vel1, &pos1);
-    
+
     iterations++;
-    // Optional: Print feedback occasionally to not flood the serial port
-    if (iterations % 50 == 0) {
-        Serial.print("Vbus: ");
-        Serial.print(vbus);
-        Serial.print("V, M0_pos: ");
-        Serial.print(pos0);
-        Serial.print(", M0_vel: ");
-        Serial.print(vel0);
-        Serial.print(", M1_pos: ");
-        Serial.print(pos1);
-        Serial.print(", M1_vel: ");
-        Serial.println(vel1);
+    // Muestra feedback cada cierto tiempo para no saturar el puerto serie
+    if (iterations % 50 == 0)
+    {
+      Serial.print("Vbus: ");
+      Serial.print(vbus);
+      Serial.print("V, M0_pos: ");
+      Serial.print(pos0);
+      Serial.print(", M0_vel: ");
+      Serial.print(vel0);
+      Serial.print(", M1_pos: ");
+      Serial.print(pos1);
+      Serial.print(", M1_vel: ");
+      Serial.println(vel1);
     }
-    delay(10); // Simulate other work in the loop
+    delay(10); // Simula trabajo adicional del loop
   }
-  
-  // Stop motors after test
+
+  // Detiene motores al finalizar
   odrive.SetVelocityBoth(0.0f, 0.0f);
 
   long duration = millis() - start_time;
   Serial.println();
-  Serial.print("Test complete. Ran ");
+  Serial.print("Prueba finalizada. Se ejecutaron ");
   Serial.print(iterations);
-  Serial.print(" loops in ");
+  Serial.print(" ciclos en ");
   Serial.print(duration);
   Serial.println(" ms.");
-  Serial.print(" Average loop frequency: ");
+  Serial.print(" Frecuencia promedio del loop: ");
   Serial.print((float)iterations / (duration / 1000.0f));
   Serial.println(" Hz");
 }
 
-void readBusVoltage() {
+// Lee el voltaje de bus de ODrive.
+void readBusVoltage()
+{
   float vbus = 0.0f;
-  // Use the library's property reading function
+  // Usa lectura de propiedades de la libreria
   odrive.ReadProperty(0, "vbus_voltage", &vbus);
-  Serial.print("Vbus voltage: ");
+  Serial.print("Voltaje Vbus: ");
   Serial.print(vbus);
   Serial.println(" V");
 }
 
-void checkErrors() {
-  Serial.println("Checking for errors...");
-  for (int axis = 0; axis < 2; ++axis) {
+// Lee el registro de error de cada eje.
+void checkErrors()
+{
+  Serial.println("Verificando errores...");
+  for (int axis = 0; axis < 2; ++axis)
+  {
     int error = 0;
     odrive.ReadProperty(axis, "error", &error);
-    if (error != 0) {
-      Serial.print("ERROR on Axis");
+    if (error != 0)
+    {
+      Serial.print("ERROR en eje ");
       Serial.print(axis);
-      Serial.print("! Error code: 0x");
+      Serial.print(". Codigo: 0x");
       Serial.println(String(error, HEX));
-    } else {
-      Serial.print("Axis");
+    }
+    else
+    {
+      Serial.print("Eje ");
       Serial.print(axis);
-      Serial.println(": No errors.");
+      Serial.println(": Sin errores.");
     }
   }
-  Serial.println("See ODrive documentation for error code meanings.");
+  Serial.println("Consulta la documentacion de ODrive para interpretar codigos.");
 }
